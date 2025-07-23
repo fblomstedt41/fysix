@@ -1,0 +1,28 @@
+Requirement Specification
+------------------------
+
+Date: 2007-11-04
+
+Author: Mr Force
+
+Font: Courier (new)
+
+Revision: 01p
+
+Revision history:
+2007-11-04 Initial draft : Mr Force
+
+
+Background
+----------
+All functional specifications are mapped to detailed requirements. These requirements area
+listed detailed in this document. All requriement will be named as following rule:
+FX_RAA.BB.CC
+
+Where:
+* AA refer to functional chapter specification
+* BB refer to submodule 
+* CC refer to detailed functional
+
+
+

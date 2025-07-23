@@ -1,0 +1,46 @@
+Project plan
+------------
+
+Revision history:
+2010-02-31 Updated with short time plan : Mr Force
+2010-02-28 Updated with short time plan : Mr Force
+2007-11-04 Initial draft                : Mr Force
+
+
+Background
+----------
+This document will organize requriements and software design in modules and deliverys against time.
+Each software module will be statet with delivery time, testning and functional verification.
+
+
+* TODO: Break down Function Specification to Requirement Specification!
+
+Actions
+--------
+
+IMPLEMENTATION
+1) Make Environment sharp and connect to Planet
+2) Make collisionhandling. Handle different types of collisions like:
+   - Weapon (shot, mine, etc.)
+   - stuff to get (gameplay items, such as improved gun etc.)
+   - another object (opponent ship, planet, etc.)
+   - game area (map, 'hard' ground)
+   + Find better naming...
+3) Game functionality (player initial information / configuration)
+   - Shot, kill, collision => stats (energy/score)
+4) Make map (level handling)
+   - Simple 'Level creator)
+   - XML-file
+5) Get one Player ship with fly porperties lik Gravity force, turboraketti and xpilot
+   - There shall be many different ship types with unique flight apsects
+6) Get the communication to work
+   - Lag compensation (at server, do some handshake with client to measure lag, 'hold' updates for an average to get as fare as
+     possible to many (hopefully all) players. If 'late' incomming control check this against 'history worl objects' and do some
+     calculations against some possible changes, if it affect something let also the 'future' be affected and send updates to all
+     clients...
+   - Interpolation at clients (aginst server messages)
+   - Await response to question to xpilot developers.
+
+
+Timeplan / delivery
+* DO THIS AGAINST REQUIREMENT SPECIFICATION!

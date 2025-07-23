@@ -1,0 +1,363 @@
+Functional Specification
+------------------------
+
+State: Draft. Review and update. Create a Requirement Specification!
+
+Revision history:
+2010-02-28 Some additional stuff : Mr Force
+2007-12-12 Removed info          : Mr Force
+2007-12-xx Review and changes    : Dannil
+2007-11-07 Updated               : Mr Force
+2007-11-04 Initial draft         : Mr Force
+
+
+Content
+-------
+1 OVERVIEW
+2 GAME ENGINE
+3.1 World
+3.2 Friction 
+3.3 Different areas
+3.4 Game type
+3.4.1 Combat
+3.4.2 Race
+3.4.3 Capture the flag
+3.4.4 Laser only (as. "rail-gun only")
+3.4.5 Adventure/quest/campaign/journey
+4 PLAYER
+4.1 Multiplayer
+4.1.1 Timing
+4.1.2 Dead reckoning
+4.2 Ship
+4.2.1 Thrust - 'Engine dust'
+4.3 AI (bot)
+4.3.1 Script 
+4.3.2 Adaptive
+4.4 Adaptive difficulty against player skill
+4.5 Player type
+4.5.1 Scoute / stealth
+4.5.2 Defender
+4.5.3 Fighter
+4.5.4 Bomber
+4.5.5 Enterprise
+4.6 Equipment
+4.6.1 Shield
+4.6.2 Weapon
+4.6.2.1 Canon (bullet)
+4.6.2.2 Missile
+4.6.2.3 Rocket
+4.6.2.4 Homing missile
+4.6.2.5 Laser ("Rail gun")
+4.6.2.6 Automatic aming gun
+4.6.3 Engine
+4.6.3.1 Jet
+4.6.3.2 Afterburner - turbo
+4.6.3.3 Propulsion
+4.6.3.4 Lightspeed (Hyper)
+4.7 Damage
+5 PRESENTATION
+5.1 Layer on layer
+5.2 Split screen
+5.3 Statistics (player rank)
+5.4 Menu
+5.5 Score
+5.6 Scaling
+5.7 Message board
+6 INPUT
+7 CHAT
+8 INTRO 
+9 DEMO
+10 CREDITS / GREETINGS
+
+
+Background
+----------
+This document will list all functions that we all will have within the game Fysix.
+
+Functional
+----------
+
+1 OVERVIEW
+The game shall be built up in a space like environment. It shall be possible to
+play against other players, computer players remotely or on the same computer.
+The player shall control its space ship through different areas, paths, caves,
+open space and more to gain experience and accomplish the active mission.
+
+
+2 GAME ENGINE
+To accomplish the calculation and simulation of a space like evironment an engine
+to handle physics and objects shall be used. Here all forces shall be calculated and
+handled. This includes accelerations, veclocities and environmental affecting forces.
+
+2.1 Physics
+There shall be an engine that handle all the physics for all included objects.
+
+2.2 World object
+All objects that shall be handled in the game are included as world objects. Each
+world object can be hit-able or non hit-able. Due all object will be affected on
+physics according to the physical engine (???). Objects with small masses and high
+veclocities will be little affected.
+
+2.3 Collision detection
+When objects collide in the world their new velocities and directions shall be
+calculate with elastic collision physics. Impact value shall also be calculated
+and passed to the object so damage can be applied.
+
+
+3 LEVEL HANDLER
+There shall be a level handler that can handle all enviromental settings and level
+configurations. The level handler shall build up the complete level to play in.
+
+3.1 World
+The playabe world shall be large. It should take around 5 minutes playtime to get
+from one side to another if the player knows the path and there are no obstacles
+or other restaining events. If the visible area for the player is about 600x400 then
+the total playable world should be around 1000 times larger in both directions.
+It shall be possible to play in a small constructed world in the same manner as
+it is in a large constructed world.
+
+3.2 Friction 
+It shall be possible to change the friction in the level. It shall be possible
+to have different frictions in different areas. (0.995, 1.0, 0.45)
+
+3.3 Different areas
+It shall be possible to construct levels with big open space areas and those with
+small tricky paths and caves.
+
+3.4 Game type
+It shall be possible to play different types of missions. The level shall decide 
+the type of mission that is played. All game types can also be time limited, the
+player that has the most succeded games will gain most experience and win the game.
+
+3.4.1 Combat
+In combat mode all players aim to get as many kills as possible. The first player to get
+a predetermined number of kills, or has the most kills when time is up will win.
+Combat mode can be played in "all to all" mode or in "team mode".
+
+3.4.2 Race
+In race mode all players are racing towards each other in a constructed path that shall
+be followed. The first player to complete the path will win. There can also be levels
+with a looping path and then a predetermined number of laps has to be completed to win.
+
+3.4.3 Capture the flag
+It shall be possible to play "capture the flag" between two player teams.
+There shall be a time limit or a capture limit. The flags shall be captured at the 
+opposite team's base and brought back to the own team's base. If the own flag is on the
+own base and the opposite team's flag is brought to the own base then the team will score.
+If the own flag is not on the own base it must be brought back before any score can
+be achived. After a score the flags' positions are restored to the home bases.
+The teams can be a mix of real person players or computer players (ai / bot).
+
+3.4.4 Laser only (as. "rail-gun only")
+All game types can also be played in a "laser only" mode. All player's ships are equipped
+with a laser. A direct hit will immediately destroy the ship that was hit.
+
+3.4.5 Adventure/quest/campaign/journey
+It shall be possible to play a game that has an adventure-like mission. The player must
+complete some stages before it goes further to next level and more difficult stages.
+This can be played as a single player or togheter with other players.
+
+
+4 PLAYER
+The player shall be controlled by a real person or by a computer player (ai / bot).
+It shall be possible to play aa single player but it should also be possible to play
+multiplayer.
+
+4.1 Multiplayer
+Update information will be sent through an unreliable datagram socket (UDP). Multicast shall
+be used if available else the game shall fallback to unicast.
+Control information, such as level-information is sent throught a reliable socket (TCP).
+
+4.1.1 Timing
+Timing shall be done through time events from reliable control socket. Updates shall be calculated
+from this timing and adjusted to a correct behaviour in all connected players game.
+
+4.1.2 Dead reckoning
+Dead reckoning shall be used with timing so all connected player will get same correct view of 
+world objects active in the game.
+
+4.2 Ship
+The player shall control a ship equipped with different mounted engines, shields and weapons.
+A ship will move through the playable area with use of its engines. Each engine provides thrust
+that gives acceleration in the direction the ship is turned. Engines mounted in such a way that
+the thrust vector don't pass though the ship's mass center will additionally provide a momentum
+to the ship.
+
+4.2.1 Thrust - 'Engine dust'
+Thrust will be presented as a world object effect. This is accomplished through generating engine
+dust in the direction of the engine. The dust will have a very small mass and a really short
+lifetime and fade away with a smooth feeling. The dust shall change color; directly from the engine
+it might be read/yellow to simulate flame and then it changes color towards grey.
+
+4.3 AI (bot)
+It shall be possible to play against a computer player. The AI players shall be of different
+levels of skill, all from really novice to really excellent.
+
+4.3.1 Script 
+The AI shall be able to play according to a predefined, configured, play script. This might be
+following a given path or so.
+
+4.3.2 Adaptive
+The AI shall have the possibility to learn how it should play in an enviroment. This includes
+to watch out for bullets and walls, learn how it is beeing killed by different players. This is
+so that it's unlikely to fall for the same trick twice.
+
+4.4 Adaptive difficulty against player skill
+If the player gets really excellent and have a high skill in managing the missions and other players,
+the game shall adapt the difficult level for the player. This should be controlled through player
+statistics and be updated in the level handler. There might be some extra AI ships added just to give
+that player a hard life. Even gravity and so should be possible to adjust for that player.
+Short, the player will be ranked and all histoial statistics can be read. For a player with
+high ranking the playability shall be adaptive and adjustable.
+
+4.5 Player type
+It shall be possible to select different player characteristics to achieve unique specialities.
+
+4.5.1 Scout / stealth
+A stealth shall be specialized for scouting and for sneaking into an enememy's base camp.
+It shall be a light ship with good stearing capabilities, lightly equipped with limited
+amount of weapon and a small shield.
+
+4.5.2 Defender
+A defender is a large robust ship with heavy defending weapon and large shield.
+
+4.5.3 Fighter
+A fighter is fast and equipped with fast weapons.
+
+4.5.4 Bomber
+A bomber has heavy damage weapons. It's relatively fast with a good shield.
+
+4.5.5 Enterprise
+The Enterprise is a really large ship with heavy weapons and large shield. Enterprise is really hard to
+stear and operate. 
+Here shall it be possible to team up to control one 'enterprise' ship. One fly and one handle weapons.
+For gameplay the 'pilot' may enter autopilot and take over weapon controle while the other player takes
+of in a launched figheter ship to do some hauting kills.
+
+4.6 Equipment
+It shall be possible to equip the player ship with engines, weapons and shields. There should
+also be possible to equip with other useabel equipments such as "keys" or something like that.
+
+4.6.1 Shield
+A ship may be equipped with front, left, right and/or rear shield(s).
+Damage to a ship will be calculated against hit and weapon type. Then it will first give damage
+to the shield. If the shield is destroyed or unfunctional then the ship will get damage.
+
+4.6.2 Weapon
+A ship may be equipped with front or rear weapons. In large space ship types such as Enteriprise
+there might be automatic aming guns. Every weapon have its own magazine with an amount of rounds.
+The mass of these magazines depend on the amount of rounds the magazine supports.
+
+4.6.2.1 Cannon (bullet)
+A cannon is a ligth damage but fast weapon.
+
+4.6.2.2 Missile
+A missile is an average damage, average launch weapon.
+
+4.6.2.3 Rocket
+A rocket is an average damage, average launch weapon.
+
+4.6.2.4 Homing missile
+A homing missile is a high hit rate, average damage, average launch weapon.
+
+4.6.2.5 Laser ("Rail gun")
+A laser is a high damage, long reload weapon. It consumes large amounts of energy (energy pack as magazine).
+
+4.6.2.6 Automatic aming gun
+Automatic aming gun unit. This unit can be equipped upon an Enterprise ship type.
+On this gun unit all of the above weapon types can be equipped.
+
+4.6.2.7 Mine
+A mine can explore in cluster mines or hard explosive preassure wave.
+
+4.6.3 Engine
+All ships are equipped with rear, left and right engines. The rear engine will operate
+the ship forward to its current direction. The left and right engines will primary rotate
+the ship around its own centerpoint, but will also secondary affect and operate the ship
+forward in its current direction.
+
+4.6.3.1 Jet
+The Jet engine is the normal engine that consume normal fuel and gives normal speed.
+
+4.6.3.2 Afterburner - turbo
+It's a hot version of the Jet-engine. When afterburner is used it affects the
+ship's speed immediately.
+
+4.6.3.3 Propulsion
+The Propulsion engine is really robust against different space friction and will go smoothely
+through all types of friction, regardless of 1.0 or 0.45.
+
+4.6.3.4 Lightspeed (Hyper)
+Will accelerate the ship to a tremendious speed. To handle this engine requires a good pilot.
+The Lighspeed engine can also be used in Hyper mode wich means that the ship will teleport
+to an area in sight distance. This will make it possible to get out of "dead-end" situations.
+
+
+4.7 Damage
+All objects that collides will get damage. The damage shall be calculated from movement energy.
+Therefore it will depend upon the mass and speed of the object. However, damage will affect
+ships in different ways, some ship types is more durable. When a ship is equipped with a shield
+the shield will be affected by the damage first. Different weapon types might give different
+damage, reardless of the mass or speed.
+The Level or Game type might deside how the damage will affect the world objects.
+
+
+5 PRESENTATION
+The presentaition shall be handled in 2D vector graphic.
+
+5.1 Layer on layer
+It shall be possible to give o more detailed view of the gameing area. There shall be possile to add
+background objects as well as foreground object. These objects are not possible to run into or affect,
+it's only level layout objects.
+There shall be a parallax effect to give some depth to the presentation.
+At the player level layer all objects will affect each other.
+
+5.2 Split screen
+It shall be possible to play multiplayer on a single computer through a split screen view.
+
+5.3 Statistics (player rank)
+All player statistics shall be stored.
+ * Hit / hits.
+ * Used guns.
+ * Used amount of bullets.
+ * Misses.
+ * Kills / killed.
+
+5.4 Menu
+A menu system for showing all information shall be used. It shall be possible to see all information about
+the ship's current status. A map shall be possible to view.
+
+5.5 Score
+A scoreboard shall be used.
+
+5.6 Scaling
+Scaling shall be applicable to all objects. If a detailed view is needed the Presentation, Level-handler (or
+game engine) shall be able to scale to a large picture. If a large area with lot of space is in front for a
+player (or confronting a really large ship or base) maybe it should be possible to zoom out (scale).
+
+5.7 Message board
+Notes that happens shall be printed in this message board. Textual message board that notifies player about events.
+Text will be typed in a type writer manner with metallic sound.
+
+
+6 INPUT
+It shall be possible to choose several input devices such as keyboard, mouse, serial device or joystick/gameport.
+
+
+7 SOUND
+There shall be background sound such as music.
+There shall be 'playing' sounds such as effects.
+
+
+8 CHAT
+It shall be possible to chat with other players through a chat-panel (shown in the menu).
+
+
+9 INTRO 
+There shall be an awesome intro! Some nice pictures on our ...
+
+10 DEMO
+There shall be an awesome demo, maybe a video recorded of Mr Force playing!
+
+11 CREDITS / GREETINGS
+A long list of all that has helpt us...

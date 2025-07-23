@@ -1,0 +1,18 @@
+System Design Description
+-------------------------
+
+Date: 2007-11-04
+
+Author: Mr Force
+
+Font: Courier (new)
+
+Revision: 01p
+
+Revision history:
+2007-11-04 Initial draft : Mr Force
+
+
+Background
+----------
+This document will describe how all requirements specified in Fysix_rs_revXXy.txt are implemented.

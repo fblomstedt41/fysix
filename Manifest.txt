@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Built-By: FBT@FYSIX
+Built-Date: Mars 02 2010
+Specification-Title: Fysix - pixel shooter game
+Specification-Vendor: Fysix
+Specification-Version: 0.1.1

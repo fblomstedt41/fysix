@@ -1,0 +1,19 @@
+Test Specification
+------------------
+
+Date: 2007-11-04
+
+Author: Mr Force
+
+Font: Courier (new)
+
+Revision: 01p
+
+Revision history:
+2007-11-04 Initial draft : Mr Force
+
+
+Background
+----------
+This document will list a one to one mapping against the requirements specification, Fysix_rs_revXXy.txt.
+All test cases will be named as following: FX_TAA.BB.CC.
