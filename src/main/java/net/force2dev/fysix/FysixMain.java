@@ -19,8 +19,6 @@ import net.force2dev.fysix.engine.FysixObject;
 import net.force2dev.fysix.equipment.Engine;
 import net.force2dev.fysix.sound.PlaySound;
 
-import java.io.*;
-import sun.audio.*;
 
 public class FysixMain {
 
