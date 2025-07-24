@@ -304,18 +304,21 @@ public class FysixMain {
                         DustObject dustObj = new DustObject();
                         dustObj.time = 39; // 0-39 : 40 units (map against color list)
 
-                        // Create the dust slightly behind the ship
+                        // Create the dust slightly behind the ship with a random spread
                         Vector2d backDir = new Vector2d(fo1.getDirection());
                         backDir.scale(-8.0); // offset behind the ship
+                        Vector2d perp = new Vector2d(-backDir.y, backDir.x);
+                        if (perp.length() != 0) {
+                            perp.normalize();
+                            perp.scale((Math.random() - 0.5) * 4.0); // random spread
+                            backDir.add(perp);
+                        }
                         Point2d dustPos = new Point2d(fo1.getPosition());
                         dustPos.add(backDir);
 
-                        dustObj.fo = (FysixObject) fe.AddObject(dustPos.x, dustPos.y, 5, null);
+                        dustObj.fo = (FysixObject) fe.AddObject(dustPos.x, dustPos.y, 0, null);
                         dustObj.fo.setDirection(new Vector2d(-fo1.getDirection().x, -fo1.getDirection().y));
-
-                        Vector2d dustAcc = new Vector2d(dustObj.fo.getDirection());
-                        dustAcc.scale(220);
-                        dustObj.fo.setAcceleration(dustAcc);
+                        dustObj.fo.setAcceleration(accNone);
                         dustVector.add(dustObj);
                 	
                 } else {
