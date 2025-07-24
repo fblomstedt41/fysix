@@ -255,10 +255,8 @@ public class FysixMain {
         levelPoly01.addPoint(1200,1200);
         
         Point2d viewCoordUL = new Point2d();
-        //viewCoordUL.x = fo1.getPosition().x; 
-        //viewCoordUL.y = fo1.getPosition().y;
-        viewCoordUL.x = moon.getPosition().x; 
-        viewCoordUL.y = moon.getPosition().y;
+        viewCoordUL.x = fo1.getPosition().x;
+        viewCoordUL.y = fo1.getPosition().y;
         
         Dimension frameSize = r.getSize();
         
@@ -362,10 +360,8 @@ public class FysixMain {
                 	fo1.getPosition().y = 1;
                 }
                 
-                //viewCoordUL.x = fo1.getPosition().x*scaleFactor-frameSize.width/2.0; 
-                //viewCoordUL.y = fo1.getPosition().y*scaleFactor-frameSize.height/2.0;
-                viewCoordUL.x = planet.getPosition().x*scaleFactor-frameSize.width/2.0; 
-                viewCoordUL.y = planet.getPosition().y*scaleFactor-frameSize.height/2.0;
+                viewCoordUL.x = fo1.getPosition().x*scaleFactor-frameSize.width/2.0;
+                viewCoordUL.y = fo1.getPosition().y*scaleFactor-frameSize.height/2.0;
                 
 
 //                System.out.println(" X: " + fo1.getPosition().x*scaleFactor + " , Y: " + fo1.getPosition().y*scaleFactor + " CX: " + fo1.getPosition().x + " , CY: " + fo1.getPosition().y);
