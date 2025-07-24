@@ -301,18 +301,22 @@ public class FysixMain {
                 	newAcc.scale(120);
                 	fo1.setAcceleration(newAcc);
                 	
-                	DustObject dustObj = new DustObject();                	
-                	dustObj.time = 39; // 0-39 : 40 units (map against color list)
-                	dustObj.fo = (FysixObject) fe.AddObject(fo1.getPosition().x, fo1.getPosition().y, 5, null);
-                	double dustA = Math.random()*2.0*Math.PI+1.0;
-                	if(dustA >= Math.PI){
-                		dustA -= Math.PI;
-                	}
-                	dustObj.fo.setDirection(dustA+Math.PI);
-                	Vector2d dustAcc = new Vector2d(dustObj.fo.getDirection());
-                	dustAcc.scale(220);
-                	dustObj.fo.setAcceleration(dustAcc);
-                	dustVector.add(dustObj);
+                        DustObject dustObj = new DustObject();
+                        dustObj.time = 39; // 0-39 : 40 units (map against color list)
+
+                        // Create the dust slightly behind the ship
+                        Vector2d backDir = new Vector2d(fo1.getDirection());
+                        backDir.scale(-8.0); // offset behind the ship
+                        Point2d dustPos = new Point2d(fo1.getPosition());
+                        dustPos.add(backDir);
+
+                        dustObj.fo = (FysixObject) fe.AddObject(dustPos.x, dustPos.y, 5, null);
+                        dustObj.fo.setDirection(new Vector2d(-fo1.getDirection().x, -fo1.getDirection().y));
+
+                        Vector2d dustAcc = new Vector2d(dustObj.fo.getDirection());
+                        dustAcc.scale(220);
+                        dustObj.fo.setAcceleration(dustAcc);
+                        dustVector.add(dustObj);
                 	
                 } else {
                     fo1.setAcceleration(accNone);
