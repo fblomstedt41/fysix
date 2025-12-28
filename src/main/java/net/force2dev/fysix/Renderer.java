@@ -144,6 +144,12 @@ public class Renderer {
 		if (!bufferStrategy.contentsLost())
 		{
 			bufferStrategy.show();
+			
+			// Force VSync if page flipping is not available
+			java.awt.BufferCapabilities caps = bufferStrategy.getCapabilities();
+			if (!caps.isPageFlipping()) {
+				java.awt.Toolkit.getDefaultToolkit().sync();
+			}
 		}
 	}
 

@@ -2,15 +2,19 @@ package net.force2dev.fysix.engine;
 
 import java.awt.Color;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.vecmath.Point2d;
 import javax.vecmath.Vector2d;
 
+import net.force2dev.fysix.physics.SpatialHash;
+
 public class FysixEngine {
 
-    private long lastTime = System.currentTimeMillis();
     private static FysixEngine engine;
     private FysixWorld fWorld = new FysixWorld();
+    private SpatialHash spatialHash;
+    private boolean useSpatialHash = true; // Enable spatial partitioning
 
     public static FysixEngine GetContext() {
         if (engine == null) {
@@ -25,16 +29,40 @@ public class FysixEngine {
         newObj.setPosition(new Point2d(posX, posY));
         newObj.registerEventCallback(cb);
         fWorld.addObject(newObj);
+        
+        // Update spatial hash if enabled
+        if (useSpatialHash && spatialHash != null) {
+            spatialHash.insert(newObj);
+        }
+        
         return newObj;
     }
 	
     public void RemoveObject(IControllable obj) {
         fWorld.removeObject((FysixObject) obj);
+        // Note: Spatial hash will be rebuilt each frame, so no need to remove here
+    }
+    
+    /**
+     * Initialize spatial hash for collision optimization
+     */
+    public void initializeSpatialHash(int cellSize, int worldWidth, int worldHeight) {
+        this.spatialHash = new SpatialHash(cellSize, worldWidth, worldHeight);
+        this.useSpatialHash = true;
+    }
+    
+    public void setUseSpatialHash(boolean use) {
+        this.useSpatialHash = use;
     }
 
-	public void Tick(Environment env) {
-        long deltaTime = System.currentTimeMillis() - lastTime;
-        lastTime += deltaTime;
+	/**
+	 * Update physics simulation
+	 * @param env Environment settings
+	 * @param deltaTimeSeconds Delta time in seconds (not milliseconds!)
+	 */
+	public void Tick(Environment env, double deltaTimeSeconds) {
+        // Cap delta time to prevent spiral of death
+        deltaTimeSeconds = Math.min(deltaTimeSeconds, 0.25); // Max 250ms
         
         /* TODO:
          *  - Calculate elastic collision velocity
@@ -45,108 +73,121 @@ public class FysixEngine {
          *  - Update position on each object
          */
         
-        // TODO: Gravity detection 
-        for (int i = 0; i < fWorld.objects.size(); i++) {
-        	FysixObject fo1 = (FysixObject) fWorld.objects.get(i);        	     		    		
-        	for (int j = i+1; j < fWorld.objects.size(); j++) {
-            	FysixObject fo2 = (FysixObject) fWorld.objects.get(j);
-            	Vector2d dist = new Vector2d(0,0);
-            	dist.sub(fo2.getPosition(), fo1.getPosition());
-            	int len = (int)dist.length();
-            	if(len>0 && len < 250){ // Affect area...
-            	  //Vector2d alfa = new Vector2d(fo1.getPosition());
-            	  FysixObject foA;
-            	  FysixObject foB;
-            	  if(fo1.getMass() <= fo2.getMass()){
-            	  	foA = fo1;
-            	  	foB = fo2;
-            	  } else {
-            	  	foA = fo2;
-            	  	foB = fo1;            	  	
-            	  }
-            	
-            	  double A = Math.abs(foB.getPosition().y-foA.getPosition().y);
-            	  double B = Math.abs(foB.getPosition().x-foA.getPosition().x);
-            	  double a = Math.atan(A/B);             	  
-            	  
-            	  if(foA.getPosition().x >= foB.getPosition().x &&
-               	  	 foA.getPosition().y >= foB.getPosition().y )
-               	  {
-               	    a = Math.PI - a;
-               	  }
-            	  else if(foA.getPosition().x >= foB.getPosition().x &&
-               	  	 foA.getPosition().y <= foB.getPosition().y )
-               	  {
-               	    a = Math.PI + a;
-               	  }
-            	  else if(foA.getPosition().x <= foB.getPosition().x &&
-               	  	 foA.getPosition().y <= foB.getPosition().y )
-               	  {
-               	    a = 2*Math.PI - a;
-               	  }
-            	  
-            	  double G = 0.0000006;
-            	  double gravForce = G*foA.getMass()*foB.getMass()/len*len;
-            	  
-            	  Vector2d gravAcc = new Vector2d(gravForce*Math.cos(-a), -gravForce*Math.sin(a));            	 
-                  Vector2d gravVelocity = new Vector2d(0,0);
-                  
-                  // v = v0 + a * dt
-                  gravAcc.scale(deltaTime / 1000.0);
-                  gravVelocity.add(foA.getVelocity());
-                  gravVelocity.add(gravAcc);
-                  foA.setVelocity(gravVelocity);
-            	}
-        	}
-        }
-        
+        // Update velocities: apply environment acceleration, object acceleration, and gravity
         for (Iterator i = fWorld.getAllObjects(); i.hasNext(); ) {
             FysixObject fo = (FysixObject) i.next();
             Vector2d totAcc = env.getEnvironmentAccelerationAtPoint(fo.getPosition());
-            Vector2d newVelocity = new Vector2d(0,0);
+            
+            // Add object's own acceleration (from thrust, etc.)
+            totAcc.add(fo.getAcceleration());
+            
+            // Add gravitational acceleration from all heavy objects (planets, etc.)
+            // This makes gravity work for ALL objects, not just heavy ones
+            for (int j = 0; j < fWorld.objects.size(); j++) {
+                FysixObject heavyObj = (FysixObject) fWorld.objects.get(j);
+                
+                // Skip self and objects with low mass (they don't have significant gravity)
+                if (fo == heavyObj || heavyObj.getMass() < 100.0) continue;
+                
+                // Calculate distance vector from fo to heavyObj
+                Vector2d dist = new Vector2d();
+                dist.sub(heavyObj.getPosition(), fo.getPosition());
+                double distance = dist.length();
+                
+                // Determine gravity range based on mass
+                // For gameplay: player should feel gravity at 5-7 ship lengths (55-77 pixels)
+                // For planets: need larger range to keep moons in orbit (2000+ pixels)
+                double SHIP_LENGTH = 11.0; // Ship length in pixels
+                double maxDistance;
+                
+                if (heavyObj.getMass() > 100000) {
+                    // Large planets: use large range for moons and gameplay
+                    maxDistance = 2500.0; // Large enough for moon orbits (~186 pixels) + extra
+                } else {
+                    // Smaller objects: use gameplay-focused range
+                    maxDistance = SHIP_LENGTH * 7.0; // 77 pixels = 7 ship lengths
+                }
+                
+                if (distance > 0.1 && distance < maxDistance) {
+                    // Game-appropriate gravity: stronger and more noticeable than realistic
+                    // For gameplay, we want gravity to be felt but not overwhelming
+                    double G = 50.0; // Much stronger G for game feel (was 0.0001 - too weak!)
+                    
+                    // Calculate gravitational acceleration: a = G * M / r^2
+                    // This affects all objects the same regardless of their mass (like in real gravity)
+                    double accelMag = (G * heavyObj.getMass()) / (distance * distance);
+                    
+                    // Normalize direction vector
+                    Vector2d direction = new Vector2d(dist);
+                    direction.normalize();
+                    
+                    // Add to total acceleration
+                    Vector2d gravityComponent = new Vector2d(direction);
+                    gravityComponent.scale(accelMag);
+                    totAcc.add(gravityComponent);
+                }
+            }
             
             // v = v0 + a * dt
-            totAcc.add(fo.getAcceleration());
-            totAcc.scale(deltaTime / 1000.0);
-            newVelocity.add(fo.getVelocity());
-            newVelocity.add(totAcc);
-            newVelocity.scale(env.getEnvironmentalResistanceAtPoint(fo.getPosition()));
+            Vector2d newVelocity = (Vector2d) fo.getVelocity().clone();
+            Vector2d accDelta = (Vector2d) totAcc.clone();
+            accDelta.scale(deltaTimeSeconds);
+            newVelocity.add(accDelta);
+            
+            // Apply environmental resistance
+            double resistance = env.getEnvironmentalResistanceAtPoint(fo.getPosition());
+            newVelocity.scale(resistance);
+            
             fo.setVelocity(newVelocity);
         }
         
-        // TODO: Collision detection
-        for (int i = 0; i < fWorld.objects.size(); i++) {
-        	FysixObject fo1 = (FysixObject) fWorld.objects.get(i);
-        	for (int j = i+1; j < fWorld.objects.size(); j++) {
-            	FysixObject fo2 = (FysixObject) fWorld.objects.get(j);
-        		if (FysixCollisionDetector.checkCollision(fo1, fo2)) {
-        	        // TODO: Elastic collision detection
-        			// vn1 = 2*m2*vo2+vo1*(m1-m2) / (m2+m1) 
-        			// vn2 = 2*m1*vo1+vo2*(m2-m1) / (m1+m2)
-        			
-        			/*fo1.getVelocity().x = 2*fo2.getMass()*fo2.getVelocity().x+fo1.getVelocity().x*(fo1.getMass()-fo2.getMass())/(fo1.getMass()+fo2.getMass());
-        			fo1.getVelocity().y = 2*fo2.getMass()*fo2.getVelocity().y+fo1.getVelocity().y*(fo1.getMass()-fo2.getMass())/(fo1.getMass()+fo2.getMass());
-        			
-        			fo2.getVelocity().x = 2*fo1.getMass()*fo1.getVelocity().x+fo2.getVelocity().x*(fo2.getMass()-fo1.getMass())/(fo1.getMass()+fo2.getMass());
-        			fo2.getVelocity().y = 2*fo1.getMass()*fo1.getVelocity().y+fo2.getVelocity().y*(fo2.getMass()-fo1.getMass())/(fo1.getMass()+fo2.getMass());
-        			*/
+        // Collision detection - use spatial hash if enabled for better performance
+        if (useSpatialHash && spatialHash != null && fWorld.objects.size() > 10) {
+            // Rebuild spatial hash each frame
+            spatialHash.clear();
+            for (int i = 0; i < fWorld.objects.size(); i++) {
+                FysixObject obj = (FysixObject) fWorld.objects.get(i);
+                spatialHash.insert(obj);
+            }
+            
+            // Check collisions using spatial hash (O(n) average instead of O(n²))
+            List<SpatialHash.CollisionPair> pairs = spatialHash.getPotentialCollisionPairs();
+                    for (SpatialHash.CollisionPair pair : pairs) {
+                        FysixObject fo1 = pair.obj1;
+                        FysixObject fo2 = pair.obj2;
 
-        			fo1.color = Color.RED;
-        			fo2.color = Color.RED;
-        		} else {
-        			fo1.color = Color.GREEN;
-        			fo2.color = Color.GREEN;
-        		}
-        	}
+                        // Only set color for collision debugging if objects don't have colors set already
+                        // This prevents overwriting planet/moon colors
+                        if (FysixCollisionDetector.checkCollision(fo1, fo2)) {
+                            // Only set to red if color is still the default green
+                            if (fo1.color == Color.GREEN) fo1.color = Color.RED;
+                            if (fo2.color == Color.GREEN) fo2.color = Color.RED;
+                        }
+                        // Don't set to green - preserve existing colors
+                    }
+        } else {
+            // Fallback to O(n²) brute force for small number of objects
+            for (int i = 0; i < fWorld.objects.size(); i++) {
+                FysixObject fo1 = (FysixObject) fWorld.objects.get(i);
+                for (int j = i+1; j < fWorld.objects.size(); j++) {
+                        FysixObject fo2 = (FysixObject) fWorld.objects.get(j);
+                        // Only set color for collision debugging if objects don't have colors set already
+                        if (FysixCollisionDetector.checkCollision(fo1, fo2)) {
+                            // Only set to red if color is still the default green
+                            if (fo1.color == Color.GREEN) fo1.color = Color.RED;
+                            if (fo2.color == Color.GREEN) fo2.color = Color.RED;
+                        }
+                        // Don't set to green - preserve existing colors
+                }
+            }
         }               
         
         for (Iterator i = fWorld.getAllObjects(); i.hasNext(); ) {
             FysixObject fo = (FysixObject) i.next();
-            Vector2d move;
             
             // s = v * dt
-            move = (Vector2d) fo.getVelocity().clone();
-            move.scale(deltaTime / 1000.0);
+            Vector2d move = (Vector2d) fo.getVelocity().clone();
+            move.scale(deltaTimeSeconds);
             fo.getPosition().add(move);
             fWorld.updateObject(fo);
         }
