@@ -32,7 +32,6 @@ import net.force2dev.fysix.ui.SettingsMenu;
 import net.force2dev.fysix.util.FrameLimiter;
 import net.force2dev.fysix.camera.AutoZoomManager;
 import net.force2dev.fysix.effects.EffectManager;
-import net.force2dev.fysix.sound.PlaySound;
 
 
 public class FysixMain {
@@ -348,7 +347,8 @@ public class FysixMain {
                 
                 // Update physics (pass deltaTime in seconds)
                 if (gameManager.getCurrentState() == GameState.PLAYING) {
-                    fe.Tick(env, deltaTimeSeconds);
+                    // Pass shockwave force provider to physics engine for physics effects
+                    fe.Tick(env, deltaTimeSeconds, effectManager);
                     
                     // Update effects (particles, screen shake, etc.)
                     effectManager.update(deltaTimeSeconds);
@@ -436,9 +436,18 @@ public class FysixMain {
                         if (playerShip != null) {
                             Wall hitWall = wallCollisionHandler.checkCollision(playerShip, finalLevel);
                             if (hitWall != null) {
+                                // Capture velocity before collision response (for shockwave intensity)
+                                Vector2d impactVelocity = playerShip.getVelocity();
+                                double impactSpeed = impactVelocity.length();
+                                Point2d impactPoint = playerShip.getPosition();
+                                
                                 // Player hit wall - take damage and bounce
                                 wallCollisionHandler.handleCollision(playerShip, hitWall);
                                 player.takeDamage(hitWall.getDamageOnCollision() > 0 ? hitWall.getDamageOnCollision() : 20);
+                                
+                                // Create shockwave effect at impact point
+                                // Use impact speed to determine intensity (minimum 50 to ensure visible wave)
+                                effectManager.createShockwave(impactPoint.x, impactPoint.y, Math.max(50.0, impactSpeed));
                             }
                         }
                     }
@@ -538,11 +547,17 @@ public class FysixMain {
                         g2d.fillPolygon(wallPoly);
                     }
                     
-                    // Draw gravity wells (planets and moons)
+                    // Draw gravity wells (planets and moons) with distortion effect
                     for (FysixObject planet : levelObjects) {
+                        Point2d planetPos = planet.getPosition();
+                        // Get distortion offset from shockwaves
+                        double[] distortion = effectManager.getDistortion(planetPos.x, planetPos.y);
+                        double offsetX = distortion[0] * scaleFactor;
+                        double offsetY = distortion[1] * scaleFactor;
+                        
                         AffineTransform planetTransform = RenderHelper.getTransform();
-                        planetTransform.translate((planet.getPosition().x * scaleFactor - viewCoordUL.x), 
-                                                 (planet.getPosition().y * scaleFactor - viewCoordUL.y));
+                        planetTransform.translate((planetPos.x * scaleFactor - viewCoordUL.x + offsetX), 
+                                                 (planetPos.y * scaleFactor - viewCoordUL.y + offsetY));
                         planetTransform.scale(scaleFactor, scaleFactor);
                         g2d.setTransform(planetTransform);
                         g2d.setColor(planet.color);
@@ -553,14 +568,20 @@ public class FysixMain {
                         }
                     }
                     
-                    // Draw player ship
+                    // Draw player ship with distortion effect
                     player = gameManager.getLocalPlayer();
                     if (player != null && player.isAlive()) {
                         FysixObject playerShipObj = player.getShipObject();
                         if (playerShipObj != null) {
+                            Point2d shipPos = playerShipObj.getPosition();
+                            // Get distortion offset from shockwaves
+                            double[] distortion = effectManager.getDistortion(shipPos.x, shipPos.y);
+                            double offsetX = distortion[0] * scaleFactor;
+                            double offsetY = distortion[1] * scaleFactor;
+                            
                             AffineTransform shipTransform = RenderHelper.getTransform();
-                            shipTransform.translate((playerShipObj.getPosition().x * scaleFactor - viewCoordUL.x), 
-                                                   (playerShipObj.getPosition().y * scaleFactor - viewCoordUL.y));
+                            shipTransform.translate((shipPos.x * scaleFactor - viewCoordUL.x + offsetX), 
+                                                   (shipPos.y * scaleFactor - viewCoordUL.y + offsetY));
                             shipTransform.rotate(theta);
                             shipTransform.scale(scaleFactor, scaleFactor);
                             g2d.setTransform(shipTransform);
@@ -569,15 +590,21 @@ public class FysixMain {
                         }
                     }
                     
-                    // Draw projectiles (batch rendering - same color)
+                    // Draw projectiles with distortion effect
                     g2d.setColor(Color.YELLOW);
                     AffineTransform projBaseTransform = RenderHelper.getTransform();
                     projBaseTransform.scale(scaleFactor, scaleFactor);
                     for (Projectile proj : projectileManager.getProjectiles()) {
                         FysixObject projObj = proj.getPhysicsObject();
+                        Point2d projPos = projObj.getPosition();
+                        // Get distortion offset from shockwaves
+                        double[] distortion = effectManager.getDistortion(projPos.x, projPos.y);
+                        double offsetX = distortion[0] * scaleFactor;
+                        double offsetY = distortion[1] * scaleFactor;
+                        
                         AffineTransform projTransform = RenderHelper.getTransform();
-                        projTransform.translate((projObj.getPosition().x * scaleFactor - viewCoordUL.x), 
-                                               (projObj.getPosition().y * scaleFactor - viewCoordUL.y));
+                        projTransform.translate((projPos.x * scaleFactor - viewCoordUL.x + offsetX), 
+                                               (projPos.y * scaleFactor - viewCoordUL.y + offsetY));
                         projTransform.scale(scaleFactor, scaleFactor);
                         g2d.setTransform(projTransform);
                         g2d.fillRect(-2, -2, 4, 4);

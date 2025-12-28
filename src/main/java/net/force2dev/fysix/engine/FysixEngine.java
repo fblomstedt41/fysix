@@ -61,6 +61,16 @@ public class FysixEngine {
 	 * @param deltaTimeSeconds Delta time in seconds (not milliseconds!)
 	 */
 	public void Tick(Environment env, double deltaTimeSeconds) {
+		Tick(env, deltaTimeSeconds, null);
+	}
+	
+	/**
+	 * Update physics simulation with shockwave effects
+	 * @param env Environment settings
+	 * @param deltaTimeSeconds Delta time in seconds (not milliseconds!)
+	 * @param shockwaveForceProvider Provider for shockwave forces (can be null)
+	 */
+	public void Tick(Environment env, double deltaTimeSeconds, ShockwaveForceProvider shockwaveForceProvider) {
         // Cap delta time to prevent spiral of death
         deltaTimeSeconds = Math.min(deltaTimeSeconds, 0.25); // Max 250ms
         
@@ -80,6 +90,24 @@ public class FysixEngine {
             
             // Add object's own acceleration (from thrust, etc.)
             totAcc.add(fo.getAcceleration());
+            
+            // Add shockwave forces if available
+            if (shockwaveForceProvider != null) {
+                double[] shockwaveForce = shockwaveForceProvider.getForce(
+                    fo.getPosition().x, 
+                    fo.getPosition().y
+                );
+                if (shockwaveForce != null && (shockwaveForce[0] != 0 || shockwaveForce[1] != 0)) {
+                    // Convert force to acceleration (F = ma, so a = F/m)
+                    // For light objects (like player ship), use minimum mass to avoid excessive acceleration
+                    double effectiveMass = Math.max(fo.getMass(), 50.0); // Minimum mass for gameplay
+                    Vector2d shockwaveAcc = new Vector2d(
+                        shockwaveForce[0] / effectiveMass,
+                        shockwaveForce[1] / effectiveMass
+                    );
+                    totAcc.add(shockwaveAcc);
+                }
+            }
             
             // Add gravitational acceleration from all heavy objects (planets, etc.)
             // This makes gravity work for ALL objects, not just heavy ones
